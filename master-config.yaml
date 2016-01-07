@@ -1,0 +1,480 @@
+#cloud-config
+
+users:
+  - name: core
+    ssh-authorized-keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCbl2K9rz8aHoDks1+rjqN9aefeHe7ePiLJsTSgP4empJInzf6/nXd1FD5vC7TJAJ6UwkhqxEQiSe/ziglZQTKyqM5RTrjsfAWCBRdTOLcEDel59gEKIMJ9eV6PfLmGApxiER1Hqv8WUHv+6QdEICyaszo+nXYHQHwFap5jSl6JUKFhGv8StDpH8/7LsVQFJKZTFvKoCREyUZ3G56Tq2Cre+kUnoytpX9FlOI/9KvBkC8kUwrRY5Bd4vZY6SJ210Bhi7J0tM3wchB0W08R+cCmYWJrxQpEeYtXVWCeQXENyiDmTBOa1C/mE2jvOXOUpz6v7jL+vhJMSPtKpFu3wvOfd ball@ultraball
+    groups:
+      - sudo
+    shell: /bin/bash
+
+write-files:
+  - path: /etc/conf.d/nfs
+    permissions: '0644'
+    content: |
+      OPTS_RPC_MOUNTD=""
+  - path: /opt/bin/wupiao
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      # [w]ait [u]ntil [p]ort [i]s [a]ctually [o]pen
+      [ -n "$1" ] && \
+        until curl -o /dev/null -sIf http://${1}; do \
+          sleep 1 && echo .;
+        done;
+      exit $?
+  - path: /opt/bin/startdns
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      curl --silent -XPOST -d"$(cat /home/core/kube-system-namespace.json)" "http://127.0.0.1:8080/api/v1/namespaces" > /dev/null
+      curl --silent -XPOST -d"$(cat /home/core/dns-addon-rc.json)" "http://127.0.0.1:8080/api/v1/namespaces/kube-system/replicationcontrollers" > /dev/null
+      curl --silent -XPOST -d"$(cat /home/core/dns-addon-svc.json)" "http://127.0.0.1:8080/api/v1/namespaces/kube-system/services" > /dev/null
+  - path: /opt/bin/startui
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      curl --silent -XPOST -d"$(cat /home/core/ui-addon-rc.json)" "http://127.0.0.1:8080/api/v1/namespaces/kube-system/replicationcontrollers" > /dev/null
+      curl --silent -XPOST -d"$(cat /home/core/ui-addon-svc.json)" "http://127.0.0.1:8080/api/v1/namespaces/kube-system/services" > /dev/null
+  - path: /home/core/kube-system-namespace.json
+    permissions: '0755'
+    content: |
+      {
+        "kind": "Namespace",
+        "apiVersion": "v1",
+        "metadata": {
+            "name": "kube-system"
+            }
+      }
+  - path: /home/core/dns-addon-svc.json
+    permissions: '0755'
+    content: |
+      {
+          "kind": "Service",
+          "spec": {
+              "clusterIP": "10.100.0.10",
+              "ports": [
+                  {
+                      "protocol": "UDP",
+                      "name": "dns",
+                      "port": 53
+                  },
+                  {
+                      "protocol": "TCP",
+                      "name": "dns-tcp",
+                      "port": 53
+                      }
+                ],
+              "selector": {
+              "k8s-app": "kube-dns"
+              }
+          },
+          "apiVersion": "v1",
+          "metadata": {
+              "labels": {
+                  "k8s-app": "kube-dns",
+                  "kubernetes.io/name": "KubeDNS",
+                  "kubernetes.io/cluster-service": "true"
+                  },
+              "namespace": "kube-system",
+              "name": "kube-dns"
+          }
+      }
+  - path: /home/core/dns-addon-rc.json
+    permissions: '0755'
+    content: |
+      {
+          "kind": "ReplicationController",
+          "spec": {
+              "replicas": 1,
+              "template": {
+                  "spec": {
+                      "dnsPolicy": "Default",
+                      "containers": [
+                          {
+                              "command": [
+                                  "/usr/local/bin/etcd",
+                                  "-data-dir",
+                                  "/var/etcd/data",
+                                  "-listen-client-urls",
+                                  "http://0.0.0.0:2379,http://0.0.0.0:4001",
+                                  "-advertise-client-urls",
+                                  "http://172.17.181.248:2379,http://172.17.181.248:4001",
+                                  "-initial-cluster-token",
+                                  "skydns-etcd"
+                              ],
+                              "image": "gcr.io/google_containers/etcd:2.0.9",
+                              "volumeMounts": [
+                                {
+                                  "mountPath": "/var/etcd/data",
+                                  "name": "etcd-storage"
+                                }
+                              ],
+                              "name": "etcd",
+                              "resources": {
+                                 "limits": {
+                                   "cpu": "100m",
+                                   "memory": "50Mi"
+                                 }
+                              }
+                          },
+                          {
+                            "image": "gcr.io/google_containers/kube2sky:1.11",
+                            "args": [
+                                "--kube_master_url=http://$private_ipv4:8080",
+                                "-domain=cluster.local"
+                                ],
+                                "name": "kube2sky",
+                                "resources": {
+                                    "limits": {
+                                        "cpu": "100m",
+                                        "memory": "50Mi"
+                                        }
+                                    }
+                                },
+                          {
+                            "livenessProbe": {
+                              "initialDelaySeconds": 30,
+                              "httpGet": {
+                                "path": "/healthz",
+                                "scheme": "HTTP",
+                                "port": 8080
+                              },
+                             "timeoutSeconds": 5
+                            },
+                            "name": "skydns",
+                            "readinessProbe": {
+                              "initialDelaySeconds": 1,
+                              "httpGet": {
+                                "path": "/healthz",
+                                "scheme": "HTTP",
+                                "port": 8080
+                              },
+                            "timeoutSeconds": 5
+                            },
+                            "image": "gcr.io/google_containers/skydns:2015-03-11-001",
+                            "args": [
+                              "-machines=http://localhost:4001",
+                              "-addr=0.0.0.0:53",
+                              "-domain=cluster.local."
+                            ],
+                            "ports": [
+                              {
+                                "protocol": "UDP",
+                                "containerPort": 53,
+                                "name": "dns"
+                              },
+                              {
+                                "protocol": "TCP",
+                                "containerPort": 53,
+                                "name": "dns-tcp"
+                              }
+                            ],
+                            "resources": {
+                              "limits": {
+                                "cpu": "100m",
+                                  "memory": "50Mi"
+                                }
+                            }
+        	              },
+        	              {
+                            "image": "gcr.io/google_containers/exechealthz:1.0",
+                            "args": [
+                              "-cmd=nslookup kubernetes.default.svc.cluster.local localhost >/dev/null",
+                              "-port=8080"
+                            ],
+                            "name": "healthz",
+                            "resources": {
+                              "limits": {
+                                "cpu": "10m",
+                                "memory": "20Mi"
+                              }
+                            },
+                            "ports": [
+                              {
+                                "protocol": "TCP",
+                                "containerPort": 8080
+                              }
+                            ]
+        	              }
+                      ],
+                      "volumes": [
+        	            {
+                          "emptyDir": {},
+                          "name": "etcd-storage"
+        	            }
+                      ]
+                  },
+                  "metadata": {
+                    "labels": {
+        	          "k8s-app": "kube-dns",
+        	          "version": "v9",
+        	          "kubernetes.io/cluster-service": "true"
+                     }
+                  }
+              },
+              "selector": {
+                "k8s-app": "kube-dns",
+                "version": "v9"
+              }
+           },
+           "apiVersion": "v1",
+           "metadata": {
+              "labels": {
+                "k8s-app": "kube-dns",
+                "version": "v9",
+                "kubernetes.io/cluster-service": "true"
+              },
+              "namespace": "kube-system",
+              "name": "kube-dns-v9"
+              }
+          }
+  - path: /home/core/ui-addon-svc.json
+    permissions: '0755'
+    content: |
+      {
+         "apiVersion": "v1",
+         "kind": "Service",
+         "metadata": {
+           "name": "kube-ui",
+           "namespace": "kube-system",
+           "labels": {
+             "k8s-app": "kube-ui",
+             "kubernetes.io/cluster-service": "true",
+             "kubernetes.io/name": "KubeUI"
+            }
+          },
+          "spec": {
+              "selector": {
+                  "k8s-app": "kube-ui"
+              },
+              "ports": [
+                  {
+                      "port": 80,
+                      "targetPort": 8080
+                  }
+              ]
+          }
+      }
+  - path: /home/core/ui-addon-rc.json
+    permissions: '0755'
+    content: |
+      {
+          "apiVersion": "v1",
+          "kind": "ReplicationController",
+          "metadata": {
+          "name": "kube-ui-v3",
+          "namespace": "kube-system",
+          "labels": {
+              "k8s-app": "kube-ui",
+              "version": "v3",
+              "kubernetes.io/cluster-service": "true"
+          }
+          },
+          "spec": {
+          "replicas": 1,
+          "selector": {
+              "k8s-app": "kube-ui",
+              "version": "v3"
+          },
+          "template": {
+              "metadata": {
+              "labels": {
+                  "k8s-app": "kube-ui",
+                  "version": "v3",
+                  "kubernetes.io/cluster-service": "true"
+              }
+              },
+              "spec": {
+              "containers": [
+                  {
+                  "name": "kube-ui",
+                  "image": "gcr.io/google_containers/kube-ui:v3",
+                  "resources": {
+                      "limits": {
+                      "cpu": "100m",
+                      "memory": "50Mi"
+                      }
+                  },
+                  "ports": [
+                      {
+                      "containerPort": 8080
+                      }
+                  ],
+                  "livenessProbe": {
+                      "httpGet": {
+                      "path": "/",
+                      "port": 8080
+                      },
+                  "initialDelaySeconds": 30,
+                  "timeoutSeconds": 5
+                  }
+                  }
+              ]
+              }
+          }
+          }
+      }
+hostname: master
+coreos:
+  etcd2:
+    name: master
+    listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
+    advertise-client-urls: http://172.17.181.248:2379,http://172.17.181.248:4001
+    initial-cluster-token: k8s_etcd
+    listen-peer-urls: http://172.17.181.248:2380,http://172.17.181.248:7001
+    initial-advertise-peer-urls: http://172.17.181.248:2380
+    initial-cluster: master=http://172.17.181.248:2380
+    initial-cluster-state: new
+  fleet:
+    metadata: "role=master"
+  units:
+    - name: systemd-networkd.service
+      command: stop
+    - name: 00-ens32.network
+      runtime: true
+      content: |
+        [Match]
+        Name=ens32
+        [Network]
+        DNS=172.17.136.11
+        Address=172.17.181.248/24
+        Gateway=172.17.181.254
+    - name: down-interfaces.service
+      command: start
+      content: |
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/ip link set ens32 down
+        ExecStart=/usr/bin/ip addr flush dev ens32
+    - name: systemd-networkd.service
+      command: restart
+    - name: generate-serviceaccount-key.service
+      command: start
+      content: |
+        [Unit]
+        Description=Generate service-account key file
+        [Service]
+        ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+        ExecStart=/bin/openssl genrsa -out /opt/bin/kube-serviceaccount.key 2048 2>/dev/null
+        RemainAfterExit=yes
+        Type=oneshot
+    - name: setup-network-environment.service
+      command: start
+      content: |
+        [Unit]
+        Description=Setup Network Environment
+        Documentation=https://github.com/kelseyhightower/setup-network-environment
+        Requires=network-online.target
+        After=network-online.target
+        [Service]
+        ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+        ExecStartPre=/usr/bin/curl -L -o /opt/bin/setup-network-environment -z /opt/bin/setup-network-environment https://github.com/kelseyhightower/setup-network-environment/releases/download/v1.0.0/setup-network-environment
+        ExecStartPre=/usr/bin/chmod +x /opt/bin/setup-network-environment
+        ExecStart=/opt/bin/setup-network-environment
+        RemainAfterExit=yes
+        Type=oneshot
+    - name: fleet.service
+      command: start
+    - name: flanneld.service
+      command: start
+      drop-ins:
+        - name: 50-network-config.conf
+          content: |
+            [Unit]
+            Requires=etcd2.service
+            After=etcd2.service
+            [Service]
+            ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{"Network":"10.244.0.0/16" }'
+    - name: docker.service
+      command: start
+    - name: kube-apiserver.service
+      command: start
+      content: |
+        [Unit]
+        Description=Kubernetes API Server
+        Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+        Requires=setup-network-environment.service etcd2.service generate-serviceaccount-key.service
+        After=setup-network-environment.service etcd2.service generate-serviceaccount-key.service
+        [Service]
+        EnvironmentFile=/etc/network-environment
+        ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+        ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-apiserver -z /opt/bin/kube-apiserver https://storage.googleapis.com/kubernetes-release/release/v1.0.3/bin/linux/amd64/kube-apiserver
+        ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-apiserver
+        ExecStartPre=/opt/bin/wupiao 127.0.0.1:2379/v2/machines
+        ExecStart=/opt/bin/kube-apiserver \
+        --service-account-key-file=/opt/bin/kube-serviceaccount.key \
+        --service-account-lookup=false \
+        --admission-control=NamespaceLifecycle,NamespaceAutoProvision,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota \
+        --runtime-config=api/v1 \
+        --allow-privileged=true \
+        --insecure-bind-address=0.0.0.0 \
+        --insecure-port=8080 \
+        --kubelet-https=true \
+        --secure-port=6443 \
+        --service-cluster-ip-range=10.100.0.0/16 \
+        --etcd-servers=http://127.0.0.1:2379 \
+        --public-address-override=${DEFAULT_IPV4} \
+        --logtostderr=true
+        Restart=always
+        RestartSec=10
+    - name: kube-controller-manager.service
+      command: start
+      content: |
+        [Unit]
+        Description=Kubernetes Controller Manager
+        Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+        Requires=kube-apiserver.service
+        After=kube-apiserver.service
+        [Service]
+        ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-controller-manager -z /opt/bin/kube-controller-manager https://storage.googleapis.com/kubernetes-release/release/v1.0.3/bin/linux/amd64/kube-controller-manager
+        ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-controller-manager
+        ExecStart=/opt/bin/kube-controller-manager \
+        --service-account-private-key-file=/opt/bin/kube-serviceaccount.key \
+        --master=127.0.0.1:8080 \
+        --logtostderr=true
+        Restart=always
+        RestartSec=10
+    - name: kube-scheduler.service
+      command: start
+      content: |
+        [Unit]
+        Description=Kubernetes Scheduler
+        Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+        Requires=kube-apiserver.service
+        After=kube-apiserver.service
+        [Service]
+        ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-scheduler -z /opt/bin/kube-scheduler https://storage.googleapis.com/kubernetes-release/release/v1.0.3/bin/linux/amd64/kube-scheduler
+        ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-scheduler
+        ExecStart=/opt/bin/kube-scheduler --master=127.0.0.1:8080
+        Restart=always
+        RestartSec=10
+    - name: create-dns.service
+      command: start
+      content: |
+        [Unit]
+        Description=POST to create dns-addon ReplicationController and Service
+        Requires=kube-kubelet.service kube-proxy.service kube-apiserver.service
+        After=kube-kubelet.service kube-proxy.service kube-apiserver.service
+        [Service]
+        ExecStartPre=/opt/bin/wupiao 127.0.0.1:10250
+        ExecStartPre=/usr/bin/sleep 5
+        ExecStart=/opt/bin/startdns
+        RemainAfterExit=yes
+        Type=oneshot
+    - name: create-ui.service
+      command: start
+      content: |
+        [Unit]
+        Description=POST to create kube-ui ReplicationController and Service
+        Requires=create-dns.service kube-kubelet.service kube-proxy.service kube-apiserver.service
+        After=kube-create-dns.service kube-kubelet.service kube-proxy.service kube-apiserver.service
+        [Service]
+        ExecStartPre=/opt/bin/wupiao 127.0.0.1:10250
+        ExecStartPre=/usr/bin/sleep 5
+        ExecStart=/opt/bin/startui
+        RemainAfterExit=yes
+        Type=oneshot
+  update:
+    group: alpha
+    reboot-strategy: off

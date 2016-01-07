@@ -1,0 +1,205 @@
+#cloud-config
+users:
+  - name: core
+    ssh-authorized-keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCbl2K9rz8aHoDks1+rjqN9aefeHe7ePiLJsTSgP4empJInzf6/nXd1FD5vC7TJAJ6UwkhqxEQiSe/ziglZQTKyqM5RTrjsfAWCBRdTOLcEDel59gEKIMJ9eV6PfLmGApxiER1Hqv8WUHv+6QdEICyaszo+nXYHQHwFap5jSl6JUKFhGv8StDpH8/7LsVQFJKZTFvKoCREyUZ3G56Tq2Cre+kUnoytpX9FlOI/9KvBkC8kUwrRY5Bd4vZY6SJ210Bhi7J0tM3wchB0W08R+cCmYWJrxQpEeYtXVWCeQXENyiDmTBOa1C/mE2jvOXOUpz6v7jL+vhJMSPtKpFu3wvOfd ball@ultraball
+    groups:
+      - sudo
+    shell: /bin/bash
+write-files:
+  - path: /opt/bin/wupiao
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      # [w]ait [u]ntil [p]ort [i]s [a]ctually [o]pen
+      [ -n "$1" ] && [ -n "$2" ] && while ! curl --output /dev/null \
+        --silent --head --fail \
+        http://${1}:${2}; do sleep 1 && echo -n .; done;
+      exit $?
+
+  - path: /etc/kubernetes/ssl/ca.pem
+    permissions: '0600'
+    content: |
+      -----BEGIN CERTIFICATE-----
+      MIIC9zCCAd+gAwIBAgIJAPORxqjgBG1tMA0GCSqGSIb3DQEBCwUAMBIxEDAOBgNV
+      BAMMB2t1YmUtY2EwHhcNMTUxMjI5MDczOTMxWhcNNDMwNTE2MDczOTMxWjASMRAw
+      DgYDVQQDDAdrdWJlLWNhMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA
+      yTu0k724UlYzfLEjmOXHo288soOcNE3hQ/Wc3KcFzY0MebGR5Vrx8rY0VIjWmkiM
+      EzDrt+meIQUfkqH6XQFytHfPrRNHQJZo0CzVie8MAn2brLazr70g62t03c1eYcZP
+      ZTP0ovXa4RUwV1OyyUuWwwsu0FL3LSJWe4F94AksIuVsJyacd6XJkgS8sjqSp5h4
+      CZuLgvw+m7pjx7xitl8TF3SEVikRhi+5jVwEdWFkR9mebF5cmLzF9EPBJH3QR+YI
+      QyJq+aCe8UTD4im0nM+3wBgSriMuPWaVRHaJizNb2MCi6DuBmqBCalaxQabzpxbI
+      NDGGY4u20lq60yAKEi0YZwIDAQABo1AwTjAdBgNVHQ4EFgQUsfCdhHxfKTF6Qiz0
+      +ncsoMybHEkwHwYDVR0jBBgwFoAUsfCdhHxfKTF6Qiz0+ncsoMybHEkwDAYDVR0T
+      BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAWfCVpHMdQM4pR+Fs7BQlfAn/7biA
+      JegOaxmpR65QdH4mB+fuM8ZoVYXkW4pM4DJSaUacdI2xg5CxpwhnEgZ070ToCKg3
+      Gvl/SRbAKbU91IaQ7wQK/JKV60EAD6VQDJyfF4Jt+XQkud7zmAhQCQZTL7ZuYOW5
+      NDxjVNu06vpH85TYW3tVzLyY0VZww6nMj8JgAFIkPMxTlqkZFVVrRVGLgjYgphxI
+      k9+8KftlbEn4w9CsyqznOkVj09w1G7jHUJWcbPqoLyQRJpSxRiBh9jLAuWJz/LZK
+      IqOqQWAWzufAhepmFinaubJ+XUXx2PeTcYS1TuSFRM5fxsvCkum1Dper1g==
+      -----END CERTIFICATE-----
+
+  - path: /etc/kubernetes/ssl/worker01.kubernetes.default-worker.pem
+    permissions: '0600'
+    content: |
+      -----BEGIN CERTIFICATE-----
+      MIIC5jCCAc6gAwIBAgIJALEhBrGOfRuoMA0GCSqGSIb3DQEBCwUAMBIxEDAOBgNV
+      BAMMB2t1YmUtY2EwHhcNMTUxMjI5MDgwMDQ2WhcNMTYxMjI4MDgwMDQ2WjAmMSQw
+      IgYDVQQDExt3b3JrZXIwMS5rdWJlcm5ldGVzLmRlZmF1bHQwggEiMA0GCSqGSIb3
+      DQEBAQUAA4IBDwAwggEKAoIBAQDQSLFOZn5aEt8Ka/30ETmOL2YpLXnL9Cs1NAYy
+      B1UiPt2E3CyvZudsq550dnj8W1quBc5zqhnmBbMDxw8G2rr+89JTu/6kt6TMRcNn
+      BRibtdS8yLhKwJ1waTOc2gJxGX0JfgYke793wKuGLQUCmn/tDnnaffDROKFqjjcF
+      p3hadVdJjb4+3wI5Kjb8hoBjiqN6Etoyn03QZ9ZnsZNmW7DgxZRiQlChRqzDiiDU
+      XIn43NacRSg6axwrNc78Mk0anoeDFehgmYrjClqCbn2185ppMCywhw/FHlqaeLEb
+      NPI97lMLuAxDKtvKe6iofeoqpmwPtSlzS2R+9zn52oRQavgdAgMBAAGjKzApMAkG
+      A1UdEwQCMAAwCwYDVR0PBAQDAgXgMA8GA1UdEQQIMAaHBKwRtfkwDQYJKoZIhvcN
+      AQELBQADggEBABjqxuotiyKKQnhFNT70NW6gvfLSKQagpL5M57A5wVwxqxDXrHuy
+      tICZvHJ++qkIg8eZDl6NNy6cc79jVdGYJhOShgOVFg8/hjZIz37/U+h7M7Zdrjmv
+      Eh+9MfCUQLHleYOAoEO8ob+Ue1Tv6rblDSG4wQlyQgN/b0nVDebCGBGbPYDmXlu0
+      gu74swv0Df4w3IY/xJJ5cAtkVXNY/5adKHmjCZFJ9eOdphdakeWktGOtL6otV2km
+      0yhFBNzXrexo2bmOjJ24jOBea3UGVMd053v31f+BL5vEPKIjRcKhoQj5EfyeDQ4v
+      xG2giUdnTkXA28UAkgYbqQjNOX1HnQjXmkQ=
+      -----END CERTIFICATE-----
+
+  - path: /etc/kubernetes/ssl/worker01.kubernetes.default-worker-key.pem
+    permissions: '0600'
+    content: |
+      -----BEGIN RSA PRIVATE KEY-----
+      MIIEpAIBAAKCAQEA0EixTmZ+WhLfCmv99BE5ji9mKS15y/QrNTQGMgdVIj7dhNws
+      r2bnbKuedHZ4/FtargXOc6oZ5gWzA8cPBtq6/vPSU7v+pLekzEXDZwUYm7XUvMi4
+      SsCdcGkznNoCcRl9CX4GJHu/d8Crhi0FApp/7Q552n3w0Tihao43Bad4WnVXSY2+
+      Pt8COSo2/IaAY4qjehLaMp9N0GfWZ7GTZluw4MWUYkJQoUasw4og1FyJ+NzWnEUo
+      OmscKzXO/DJNGp6HgxXoYJmK4wpagm59tfOaaTAssIcPxR5amnixGzTyPe5TC7gM
+      QyrbynuoqH3qKqZsD7Upc0tkfvc5+dqEUGr4HQIDAQABAoIBABf1tMfTDIfqEdRO
+      FfmknZ1YoITuIUuv++Rz5p6Mr2NwHeVxuoY27TpYB7NYCZTmIWlRa61sjOwkDbLK
+      jFT6hnZbr/9H6gQiyAdjoxXPxUPsR9urr1+SBspun6xUe+Fs0DBuWeCKh70L4e9e
+      cGwbP8oSVzwmLrSysgbi8ztoR3UIQ1mrmlP8pXDH78KDzWHTPV2vqnHJ+Mq+u9PT
+      RvtSGsKuVr5Fg0QUgS71TDNeYzW8RHrZWMAZ6vTZ3y6rHGrCsZOXNnZHaZW0ctZR
+      SI0zVXP8k6GXiXB9UZWdWQtBe+RetjMglT/9dKMb559Gsl7u5zBgZyoTVpcV/RSF
+      AJHnoxUCgYEA9M2X8SUk3e8EbaqVHGVqy05W5nIemie5irjWgi3I+V6/AH/0vCdo
+      5kZQkhcaF9g99fPauKrXk27nIWFKLWDG5yT11buzo/zpjEkS5EZryzPTO4yvBJ/K
+      hJg3zHkRAhyLc3AvKkBJLFTOUHB2iMMaitBk5jXDv2e0Zbu2M3qUU0sCgYEA2c9+
+      0RZdw83RsOx+uNz+1Ps+LAC8GzyUISZyqCNy9umXJrE6Eg/ccSyPqqEOM18EVULs
+      xoJGyjZJLQ94Zz5FF3HCaxW06C9wjTRuE4cZswwjd1TWev+cF+vPdIWH5tTLEUH/
+      g9Rnn53dEB9dim/Skt2ZjpL7YYCkpyGDdaXIWTcCgYEAsR5jdbUTNIPv50zJb+8s
+      0oYOt9MPsydUxjqv8SYhR9O2TC1ILC4zZpCvUNPoLCJnyiEyOfRZ3zEZh3w1yBlC
+      MBD80TRqaBbf/4ELayBMc4w+o9JI+waF52Oe05Ewrh9rAg3EAkTa7Hk7gNWt3YuU
+      E6Vtq2ZxB3aH/idPT3W8BXsCgYAQ/HygY8UmOwvqZ1cupZV+GKXtmpUQ7rWCrFPu
+      xuz1UpxGGTY1KGWBsf72SJ8p5HQbDiAXDxvkMz2btQQn0RRkUqvd3BCCtwhpCri2
+      7ydS7lRpvwUHDJ4ow2wnYy6JEvlPPD1oE42NRityUW/jFvtuFrgeBVpzbSvqGNP+
+      vdIVGwKBgQDm2rJy0OHE08teU806BJMDAUXAswHR/0TTe2dDaU+F0vz8Vid70b+u
+      7X8PLozFJrszKDH2Kdj5D2zBo3LVxdwkcAdA8CxYSD77DedFMnSBzgn4BGMRSEgX
+      1QHcFM1VAskRPhW7UShDm1qFsQh4zh6xS8eFqi1ZOWE3jhyUSph/5w==
+      -----END RSA PRIVATE KEY-----
+
+hostname: worker01
+coreos:
+  etcd2:
+    listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
+    advertise-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
+    initial-cluster: master=http://172.17.181.248:2380
+    proxy: on
+  fleet:
+    metadata: "role=node"
+  units:
+    - name: systemd-networkd.service
+      command: stop
+    - name: 00-ens32.network
+      runtime: true
+      content: |
+        [Match]
+        Name=ens32
+
+        [Network]
+        DNS=172.17.136.11
+        Address=172.17.181.249/24
+        Gateway=172.17.181.254
+    - name: down-interfaces.service
+      command: start
+      content: |
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/ip link set ens32 down
+        ExecStart=/usr/bin/ip addr flush dev ens32
+    - name: systemd-networkd.service
+      command: restart
+    - name: fleet.service
+      command: start
+    - name: flanneld.service
+      command: start
+      drop-ins:
+        - name: 50-network-config.conf
+          content: |
+            [Unit]
+            Requires=etcd2.service
+            After=etcd2.service
+            [Service]
+            ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{"Network":"10.244.0.0/16" }'
+    - name: docker.service
+      command: start
+    - name: setup-network-environment.service
+      command: start
+      content: |
+        [Unit]
+        Description=Setup Network Environment
+        Documentation=https://github.com/kelseyhightower/setup-network-environment
+        Requires=network-online.target
+        After=network-online.target
+        [Service]
+        ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+        ExecStartPre=/usr/bin/curl -L -o /opt/bin/setup-network-environment -z /opt/bin/setup-network-environment https://github.com/kelseyhightower/setup-network-environment/releases/download/v1.0.0/setup-network-environment
+        ExecStartPre=/usr/bin/chmod +x /opt/bin/setup-network-environment
+        ExecStart=/opt/bin/setup-network-environment
+        RemainAfterExit=yes
+        Type=oneshot
+    - name: kube-proxy.service
+      command: start
+      content: |
+        [Unit]
+        Description=Kubernetes Proxy
+        Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+        Requires=setup-network-environment.service
+        After=setup-network-environment.service
+        [Service]
+        ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-proxy -z /opt/bin/kube-proxy https://storage.googleapis.com/kubernetes-release/release/v1.0.3/bin/linux/amd64/kube-proxy
+        ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-proxy
+        # wait for kubernetes master to be up and ready
+        ExecStartPre=/opt/bin/wupiao 172.17.181.248 8080
+        ExecStart=/opt/bin/kube-proxy \
+        --master=172.17.181.248:8080 \
+        --logtostderr=true
+        Restart=always
+        RestartSec=10
+    - name: kube-kubelet.service
+      command: start
+      content: |
+        [Unit]
+        Description=Kubernetes Kubelet
+        Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+        Requires=setup-network-environment.service
+        After=setup-network-environment.service
+        [Service]
+        EnvironmentFile=/etc/network-environment
+        ExecStartPre=/usr/bin/curl -L -o /opt/bin/kubelet -z /opt/bin/kubelet https://storage.googleapis.com/kubernetes-release/release/v1.0.3/bin/linux/amd64/kubelet
+        ExecStartPre=/usr/bin/chmod +x /opt/bin/kubelet
+        # wait for kubernetes master to be up and ready
+        ExecStartPre=/opt/bin/wupiao 172.17.181.248 8080
+        ExecStart=/opt/bin/kubelet \
+        --address=0.0.0.0 \
+        --port=10250 \
+        --hostname-override=${DEFAULT_IPV4} \
+        --cluster-dns=10.100.0.10 \
+        --cluster-domain=cluster.local \
+        --api-servers=172.17.181.248:8080 \
+        --allow-privileged=true \
+        --logtostderr=true \
+        --cadvisor-port=4194 \
+        --healthz-bind-address=0.0.0.0 \
+        --tls-cert-file=/etc/kubernetes/ssl/worker01.kubernetes.default-worker.pem \
+        --tls-private-key-file=/etc/kubernetes/ssl/worker01.kubernetes.default-worker-key.pem \
+        --healthz-port=10248
+        Restart=always
+        RestartSec=10
+  update:
+    group: alpha
+    reboot-strategy: off

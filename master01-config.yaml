@@ -1,0 +1,240 @@
+#cloud-config
+
+users:
+  - name: core
+    ssh-authorized-keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCbl2K9rz8aHoDks1+rjqN9aefeHe7ePiLJsTSgP4empJInzf6/nXd1FD5vC7TJAJ6UwkhqxEQiSe/ziglZQTKyqM5RTrjsfAWCBRdTOLcEDel59gEKIMJ9eV6PfLmGApxiER1Hqv8WUHv+6QdEICyaszo+nXYHQHwFap5jSl6JUKFhGv8StDpH8/7LsVQFJKZTFvKoCREyUZ3G56Tq2Cre+kUnoytpX9FlOI/9KvBkC8kUwrRY5Bd4vZY6SJ210Bhi7J0tM3wchB0W08R+cCmYWJrxQpEeYtXVWCeQXENyiDmTBOa1C/mE2jvOXOUpz6v7jL+vhJMSPtKpFu3wvOfd ball@ultraball
+    groups:
+      - sudo
+    shell: /bin/bash
+write-files:
+  - path: /opt/bin/wupiao
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      # [w]ait [u]ntil [p]ort [i]s [a]ctually [o]pen
+      [ -n "$1" ] && \
+        until curl -o /dev/null -sIf http://${1}; do \
+          sleep 1 && echo .;
+        done;
+      exit $?
+
+  - path: /etc/kubernetes/ssl/ca.pem
+    permissions: '0600'
+    content: |
+      -----BEGIN CERTIFICATE-----
+      MIIC9zCCAd+gAwIBAgIJAPORxqjgBG1tMA0GCSqGSIb3DQEBCwUAMBIxEDAOBgNV
+      BAMMB2t1YmUtY2EwHhcNMTUxMjI5MDczOTMxWhcNNDMwNTE2MDczOTMxWjASMRAw
+      DgYDVQQDDAdrdWJlLWNhMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA
+      yTu0k724UlYzfLEjmOXHo288soOcNE3hQ/Wc3KcFzY0MebGR5Vrx8rY0VIjWmkiM
+      EzDrt+meIQUfkqH6XQFytHfPrRNHQJZo0CzVie8MAn2brLazr70g62t03c1eYcZP
+      ZTP0ovXa4RUwV1OyyUuWwwsu0FL3LSJWe4F94AksIuVsJyacd6XJkgS8sjqSp5h4
+      CZuLgvw+m7pjx7xitl8TF3SEVikRhi+5jVwEdWFkR9mebF5cmLzF9EPBJH3QR+YI
+      QyJq+aCe8UTD4im0nM+3wBgSriMuPWaVRHaJizNb2MCi6DuBmqBCalaxQabzpxbI
+      NDGGY4u20lq60yAKEi0YZwIDAQABo1AwTjAdBgNVHQ4EFgQUsfCdhHxfKTF6Qiz0
+      +ncsoMybHEkwHwYDVR0jBBgwFoAUsfCdhHxfKTF6Qiz0+ncsoMybHEkwDAYDVR0T
+      BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAWfCVpHMdQM4pR+Fs7BQlfAn/7biA
+      JegOaxmpR65QdH4mB+fuM8ZoVYXkW4pM4DJSaUacdI2xg5CxpwhnEgZ070ToCKg3
+      Gvl/SRbAKbU91IaQ7wQK/JKV60EAD6VQDJyfF4Jt+XQkud7zmAhQCQZTL7ZuYOW5
+      NDxjVNu06vpH85TYW3tVzLyY0VZww6nMj8JgAFIkPMxTlqkZFVVrRVGLgjYgphxI
+      k9+8KftlbEn4w9CsyqznOkVj09w1G7jHUJWcbPqoLyQRJpSxRiBh9jLAuWJz/LZK
+      IqOqQWAWzufAhepmFinaubJ+XUXx2PeTcYS1TuSFRM5fxsvCkum1Dper1g==
+      -----END CERTIFICATE-----
+  - path: /etc/kubernetes/ssl/apiserver.pem
+    permissions: '0600'
+    content: |
+      -----BEGIN CERTIFICATE-----
+      MIIC/zCCAeegAwIBAgIJALEhBrGOfRunMA0GCSqGSIb3DQEBCwUAMBIxEDAOBgNV
+      BAMMB2t1YmUtY2EwHhcNMTUxMjI5MDc0MTE1WhcNMTYxMjI4MDc0MTE1WjAZMRcw
+      FQYDVQQDEw5rdWJlLWFwaXNlcnZlcjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCC
+      AQoCggEBAPFl7I37WTJvJYNtmLt/uyID2r6KsZeGH2Nv2mubWI7Qe2RkUAn2uMlp
+      gpr4fAU6YHpZNREbdKYKoJnk3r7UofQTKV+MlljZVJWd6k3MdW4A48S8BTrSE7Vu
+      MafX24YQK2bLSGXAhwWZ+xPMSlx1ErQc9ZBaA8uJeemdpSrhBW6FwsL2B0sdml3K
+      TfALxUAWhjrU0duY3wnsKM6n0MM2hS3LoioafTaAv6+5/p8unkbBMJr3XwFiShkg
+      ILuZMlP+BIddZJPdg3pcMq/4wv5anS1W1wo4pHmuC1+VZdhW/wCf1HFHB13tskeP
+      ef44hS/gHDvPRIATm/Bm2Ak/NlrF/J8CAwEAAaNRME8wCQYDVR0TBAIwADALBgNV
+      HQ8EBAMCBeAwNQYDVR0RBC4wLIIKa3ViZXJuZXRlc4ISa3ViZXJuZXRlcy5kZWZh
+      dWx0hwQKAAoBhwSsEbX4MA0GCSqGSIb3DQEBCwUAA4IBAQCS4WejqIT0qKa1dGYO
+      fP5pgF+VFwloZTb8K8GCG6589RKs03CPSHUFRyfXpR7TIbikNq7xbYwLRgdsiMA1
+      mBzqTY0if8sU9RTFwSh3+vf5XW1bdTHAP35VoEvUmmx2AHFyuzvezDwYP/TCDWT4
+      8p0pR4mkvfNe8phpTLCvTYwNUMi2MOz44fiT9leFFmoR7nOQNToiWLFb5hOJ5mDj
+      T214UrmjQFIfDYC7sh4NW0+t5wwjarncRBEs7F2d15K6LYb/6RaabcZ/NYYFEQPh
+      Ke7JeWjxDQaGrD5UknqkNms3T17JgzcScIo7dkOTJSzlueI7p5w5MtYhUehJ+eLJ
+      gzAX
+      -----END CERTIFICATE-----
+  - path: /etc/kubernetes/ssl/apiserver-key.pem
+    permissions: '0600'
+    content: |
+      -----BEGIN RSA PRIVATE KEY-----
+      MIIEpQIBAAKCAQEA8WXsjftZMm8lg22Yu3+7IgPavoqxl4YfY2/aa5tYjtB7ZGRQ
+      Cfa4yWmCmvh8BTpgelk1ERt0pgqgmeTevtSh9BMpX4yWWNlUlZ3qTcx1bgDjxLwF
+      OtITtW4xp9fbhhArZstIZcCHBZn7E8xKXHUStBz1kFoDy4l56Z2lKuEFboXCwvYH
+      Sx2aXcpN8AvFQBaGOtTR25jfCewozqfQwzaFLcuiKhp9NoC/r7n+ny6eRsEwmvdf
+      AWJKGSAgu5kyU/4Eh11kk92Delwyr/jC/lqdLVbXCjikea4LX5Vl2Fb/AJ/UcUcH
+      Xe2yR495/jiFL+AcO89EgBOb8GbYCT82WsX8nwIDAQABAoIBAQDVE5qSWOKK2gDK
+      2dqO5lhP1gcnWVUY4pKiOwEZKq4ooW3JV6IuqVDCuBdIoz0VgEnYtRVaXFnClm7c
+      aGEVIKszvhYu+PFcy7kVt6Yxtd+Rkcd6yFv1Z6lt5C6AcNCcrXkh6x2kcyS7lQdC
+      mnio084GnelD2bCv4FF0HGrGRol8223wY+rMgnFlmYb9YEQ+4MoguUUakMmyV0CP
+      8xbNTDQCOFJNMhtO+IEWxx8fXnRUcdARR4/TuJcehE/SJRJXwLMZtcVfm/YwR6qs
+      iOTpIvXUZlSU+9hNs5+2B31Kr+s6nz2dqvgKgXkTkfdsWkkIAwyp5vnT87VhfPxJ
+      7lGBX21BAoGBAP4FNfNUfJGJdlbuS+Q5LvkLH77s9Xv2I++RdeB6aOM0LBvepk3s
+      Yyszg01zF0E5ZYyRLmkb9Nuc5L0aKjCJ4DZPW8GYn/Et3J18Cb1tOkXr2phTpvEf
+      zxsW0/aqM+IjBX2kdjhiDLdJ8pmC0GTkmHu6hTqcYTG8DXsYHSetogcLAoGBAPNH
+      h/Mtn08au1tqOjmcAAvH/xyLe8CHFf3M/IVUcAVk4B2DMbsXeOJpIWOBI+pMPf0H
+      KrQjWH7qkX83aj48mL96/DlZnozmFiy1q5uYqvLa+ZFUUtYuTsDNIaUyHVnsvpc/
+      V5kurPUXaICeKkDIsev/fDlIAUBw8uF++1i0pE09AoGAFQX5YRos9R6bXLZ8MXdK
+      G/J/vh1+c7P7ZWh0iQ+YfrVisSvMN8bIrlqlE1PjKNLHRMr/PFPEACkMBVqVA09l
+      7xjCT1OCaUOSbrZFWBgiKodKoDDMMEihq2xIPrH3eU/MtIlX/3Kd+s1z9qCM/sys
+      khDt1dv7b1JRC08DmrUUI+ECgYEAhzw5P54Z0/BpPBzl9wZYJDRuBSEojtLJD8f2
+      i+tvRiBYUS+P4o/evAVy8QxluaXeQ5zLSU3osMyWSuC0J5qp0q98LCk8cNiqdPoc
+      RidsyAmf+ACm97bQQm8Fh/4+wLFRFWS5vkZrEOeNSQojNNYbybPBC1qSj476BQ4A
+      jMQGHYUCgYEA+4k9KkQfsejQ0Zs0pNxqe1wI0orcfz6TSsKAveowWzQ+nasJKYkd
+      NMwi+fpg2tiqy2wOxCuCeWozK26685cqEYVyT5t0NiB5HNGRYWqrGvq1t6oNrM2k
+      1YTdLZAKvHzcKzA3b8r5pprG8yT5XHcdPHx1kQySPWyJCz3+bv68JsE=
+      -----END RSA PRIVATE KEY-----
+
+hostname: master01
+coreos:
+  etcd2:
+    name: master
+    listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
+    advertise-client-urls: http://172.17.181.248:2379,http://172.17.181.248:4001
+    initial-cluster-token: k8s_etcd
+    listen-peer-urls: http://172.17.181.248:2380,http://172.17.181.248:7001
+    initial-advertise-peer-urls: http://172.17.181.248:2380
+    initial-cluster: master=http://172.17.181.248:2380
+    initial-cluster-state: new
+  fleet:
+    metadata: "role=master"
+  units:
+    - name: systemd-networkd.service
+      command: stop
+    - name: 00-enp0s8.network
+      runtime: true
+      content: |
+        [Match]
+        Name=enp0s8
+
+        [Network]
+        DNS=172.17.136.11
+        Address=172.17.181.248/24
+        Gateway=172.17.181.254
+    - name: down-interfaces.service
+      command: start
+      content: |
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/ip link set enp0s8 down
+        ExecStart=/usr/bin/ip addr flush dev enp0s8
+    - name: systemd-networkd.service
+      command: restart
+    - name: generate-serviceaccount-key.service
+      command: start
+      content: |
+        [Unit]
+        Description=Generate service-account key file
+        [Service]
+        ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+        ExecStart=/bin/openssl genrsa -out /opt/bin/kube-serviceaccount.key 2048 2>/dev/null
+        RemainAfterExit=yes
+        Type=oneshot
+    - name: setup-network-environment.service
+      command: start
+      content: |
+        [Unit]
+        Description=Setup Network Environment
+        Documentation=https://github.com/kelseyhightower/setup-network-environment
+        Requires=network-online.target
+        After=network-online.target
+        [Service]
+        ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+        ExecStartPre=/usr/bin/curl -L -o /opt/bin/setup-network-environment -z /opt/bin/setup-network-environment https://github.com/kelseyhightower/setup-network-environment/releases/download/v1.0.0/setup-network-environment
+        ExecStartPre=/usr/bin/chmod +x /opt/bin/setup-network-environment
+        ExecStart=/opt/bin/setup-network-environment
+        RemainAfterExit=yes
+        Type=oneshot
+    - name: fleet.service
+      command: start
+    - name: flanneld.service
+      command: start
+      drop-ins:
+        - name: 50-network-config.conf
+          content: |
+            [Unit]
+            Requires=etcd2.service
+            After=etcd2.service
+            [Service]
+            ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{"Network":"10.244.0.0/16" }'
+    - name: docker.service
+      command: start
+    - name: kube-apiserver.service
+      command: start
+      content: |
+        [Unit]
+        Description=Kubernetes API Server
+        Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+        Requires=setup-network-environment.service etcd2.service generate-serviceaccount-key.service
+        After=setup-network-environment.service etcd2.service generate-serviceaccount-key.service
+        [Service]
+        EnvironmentFile=/etc/network-environment
+        ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+        ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-apiserver -z /opt/bin/kube-apiserver https://storage.googleapis.com/kubernetes-release/release/v1.0.3/bin/linux/amd64/kube-apiserver
+        ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-apiserver
+        ExecStartPre=/opt/bin/wupiao 127.0.0.1:2379/v2/machines
+        ExecStart=/opt/bin/kube-apiserver \
+        #--service-account-key-file=/opt/bin/kube-serviceaccount.key \
+        --service-account-lookup=false \
+        --admission-control=NamespaceLifecycle,NamespaceAutoProvision,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota \
+        --runtime-config=api/v1 \
+        --allow-privileged=true \
+        --insecure-bind-address=0.0.0.0 \
+        --insecure-port=8080 \
+        --kubelet-https=true \
+        --secure-port=443 \
+        --service-cluster-ip-range=10.100.0.0/16 \
+        --etcd-servers=http://127.0.0.1:2379 \
+        --public-address-override=${DEFAULT_IPV4} \
+        --admission-control=NamespaceLifecycle,NamespaceExists,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota \
+        --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem \
+        --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem \
+        --client-ca-file=/etc/kubernetes/ssl/ca.pem \
+        --service-account-key-file=/etc/kubernetes/ssl/apiserver-key.pem \
+        --logtostderr=true
+        Restart=always
+        RestartSec=10
+    - name: kube-controller-manager.service
+      command: start
+      content: |
+        [Unit]
+        Description=Kubernetes Controller Manager
+        Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+        Requires=kube-apiserver.service
+        After=kube-apiserver.service
+        [Service]
+        ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-controller-manager -z /opt/bin/kube-controller-manager https://storage.googleapis.com/kubernetes-release/release/v1.0.3/bin/linux/amd64/kube-controller-manager
+        ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-controller-manager
+        ExecStart=/opt/bin/kube-controller-manager \
+        #--service-account-private-key-file=/opt/bin/kube-serviceaccount.key \
+        --master=127.0.0.1:8080 \
+        --service-account-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem \
+        --root-ca-file=/etc/kubernetes/ssl/ca.pem \
+        --logtostderr=true
+        Restart=always
+        RestartSec=10
+    - name: kube-scheduler.service
+      command: start
+      content: |
+        [Unit]
+        Description=Kubernetes Scheduler
+        Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+        Requires=kube-apiserver.service
+        After=kube-apiserver.service
+        [Service]
+        ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-scheduler -z /opt/bin/kube-scheduler https://storage.googleapis.com/kubernetes-release/release/v1.0.3/bin/linux/amd64/kube-scheduler
+        ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-scheduler
+        ExecStart=/opt/bin/kube-scheduler --master=127.0.0.1:8080
+        Restart=always
+        RestartSec=10
+  update:
+    group: alpha
+    reboot-strategy: off
