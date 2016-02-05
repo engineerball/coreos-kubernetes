@@ -195,8 +195,8 @@ coreos:
         --logtostderr=true \
         --cadvisor-port=4194 \
         --healthz-bind-address=0.0.0.0 \
-        --tls-cert-file=/etc/kubernetes/ssl/worker01.kubernetes.default-worker.pem \
-        --tls-private-key-file=/etc/kubernetes/ssl/worker01.kubernetes.default-worker-key.pem \
+        --tls-cert-file=/etc/kubernetes/ssl/worker02.kubernetes.default-worker.pem \
+        --tls-private-key-file=/etc/kubernetes/ssl/worker02.kubernetes.default-worker-key.pem \
         --healthz-port=10248
         Restart=always
         RestartSec=10
